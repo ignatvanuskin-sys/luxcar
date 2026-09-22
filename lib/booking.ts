@@ -87,7 +87,16 @@ export interface BookingStore {
   kind: BookingStoreKind;
   create(draft: BookingDraft): Promise<Booking>;
   list(): Promise<Booking[]>;
-  updateStatus(id: string, status: BookingStatus): Promise<Booking>;
+  /**
+   * `localOnly` skips the API round-trip for rows that only exist in this
+   * browser's mirror (serverless instances are ephemeral), so the request log is
+   * not polluted with pointless 404s.
+   */
+  updateStatus(
+    id: string,
+    status: BookingStatus,
+    options?: { localOnly?: boolean },
+  ): Promise<Booking>;
 }
 
 /** Opening hours confirmed on the 2GIS card: daily 09:00–23:00. */
@@ -338,7 +347,13 @@ class ResilientBookingStore implements BookingStore {
     return mergeBookings([], readLocal());
   }
 
-  async updateStatus(id: string, status: BookingStatus): Promise<Booking> {
+  async updateStatus(
+    id: string,
+    status: BookingStatus,
+    options?: { localOnly?: boolean },
+  ): Promise<Booking> {
+    if (options?.localOnly) return localStore.updateStatus(id, status);
+
     if (!this.degraded) {
       try {
         const updated = await apiStore.updateStatus(id, status);

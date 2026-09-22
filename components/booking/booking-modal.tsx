@@ -73,22 +73,28 @@ export function BookingModal({
   }, [onClose]);
 
   return (
-    <div
-      className="animate-fade-in fixed inset-0 z-100 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <div className="animate-fade-in fixed inset-0 z-100 overflow-y-auto overscroll-contain bg-black/70 backdrop-blur-sm">
+      {/* Alignment lives on an inner wrapper with min-h-full. Putting
+          `items-end` directly on the scroll container made the overflow
+          unreachable: a flex item taller than the viewport overflows the start
+          edge, which is outside the scrollable region — on a 320x568 phone the
+          dialog top and its close button were clipped off-screen. */}
       <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="booking-dialog-title"
-        /* min-w-0 is required: without it this flex item grows to the
-           min-content width of the time-slot row (~940px) and gets clipped on
-           narrow phones instead of scrolling internally. */
-        className="animate-pop-in panel relative my-0 min-w-0 w-full max-w-2xl rounded-t-3xl border-x-0 border-b-0 sm:my-8 sm:rounded-3xl sm:border-x sm:border-b"
+        className="flex min-h-full items-end justify-center p-0 sm:items-center sm:p-6"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
       >
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="booking-dialog-title"
+          /* min-w-0 is required: without it this flex item grows to the
+             min-content width of the time-slot row (~940px) and gets clipped on
+             narrow phones instead of scrolling internally. */
+          className="animate-pop-in panel relative my-0 min-w-0 w-full max-w-2xl rounded-t-3xl border-x-0 border-b-0 sm:my-8 sm:rounded-3xl sm:border-x sm:border-b"
+        >
         <div className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-5 py-4 sm:px-7 sm:py-5">
           <div className="space-y-1">
             <h2 id="booking-dialog-title" className="text-lg font-semibold sm:text-xl">
@@ -119,6 +125,7 @@ export function BookingModal({
         </div>
 
         <BookingFlow initialServiceId={initialServiceId} onClose={onClose} compact />
+        </div>
       </div>
     </div>
   );

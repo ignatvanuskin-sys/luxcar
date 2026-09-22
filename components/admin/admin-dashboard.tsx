@@ -133,7 +133,9 @@ export function AdminDashboard() {
     );
 
     try {
-      const updated = await getBookingStore().updateStatus(booking.id, nextStatus);
+      const updated = await getBookingStore().updateStatus(booking.id, nextStatus, {
+        localOnly: booking.origin === "local",
+      });
       setBookings((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
