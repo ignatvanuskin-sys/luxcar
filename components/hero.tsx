@@ -60,7 +60,9 @@ export function Hero() {
 
             <h1 className="text-[2.1rem] leading-[1.06] font-semibold tracking-[-0.03em] sm:text-5xl lg:text-[3.4rem] xl:text-[3.75rem]">
               <span className="rise block" style={riseDelay(70)}>
-                Обслуживаем автомобиль так,
+                {/* The trailing space matters: without it the two blocks read
+                    as one word ("так,чтобы") for screen readers and copy-paste. */}
+                {"Обслуживаем автомобиль так, "}
               </span>
               <span className="rise block text-white/45" style={riseDelay(150)}>
                 чтобы вы могли спокойно ехать дальше.
