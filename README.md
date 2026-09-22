@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lux Car — сайт автосервиса (демо)
 
-## Getting Started
+Премиальный одностраничный сайт автосервиса **Lux car** в Семее с рабочей
+онлайн-записью и демонстрационной панелью заявок.
 
-First, run the development server:
+Стек: **Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Lucide Icons · sharp**
+
+## Быстрый старт
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Продакшн-проверка:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint         # eslint
+npx tsc --noEmit     # проверка типов
+npm run build        # production build
+npm start            # запуск собранного приложения
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Проверки (нужен запущенный сервер):
 
-## Learn More
+```bash
+node scripts/qa.mjs                                      # 31 сквозная проверка страниц и API
+node --experimental-strip-types scripts/phone-mask.test.mjs   # маска телефона
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Страницы
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Маршрут | Назначение |
+|---|---|
+| `/` | Лендинг: hero, услуги, преимущества, о компании, процесс, галерея, отзывы, рейтинг, CTA, контакты + карта |
+| `/booking` | Отдельная страница онлайн-записи (тот же пошаговый flow) |
+| `/admin` | Демонстрационная панель заявок (noindex) |
+| `/api/bookings` | REST-хранилище заявок: `GET`, `POST`, `PATCH ?id=` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Онлайн-запись
 
-## Deploy on Vercel
+Пошаговый flow из 5 шагов + экран успеха:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Услуга (диагностика, ТО, ГБО, электрика, ремонт, ходовая, тормоза, другое)
+2. Автомобиль — марка, модель, год (валидация года)
+3. Дата — собственный календарь, горизонт 60 дней
+4. Время — слоты 09:00–18:00, прошедшие слоты скрыты для текущего дня
+5. Контакты — имя, телефон с маской `+7 (___) ___-__-__`, комментарий
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Финальный экран показывает услугу, автомобиль, дату, время, имя и телефон, а
+также прямо говорит: «Администратор свяжется с вами для подтверждения записи».
+
+Форма открывается **и модальным окном** (со всех CTA на лендинге), **и на
+отдельной странице** `/booking` — используется один и тот же компонент
+`components/booking/booking-flow.tsx`.
+
+### Архитектура хранения
+
+UI общается только с интерфейсом `BookingStore` (`lib/booking.ts`):
+
+```
+createBooking()  →  POST  /api/bookings
+getBookings()    →  GET   /api/bookings
+updateBooking()  →  PATCH /api/bookings?id=<id>   body: { status }
+```
+
+* `ApiBookingStore` — обращения к route handler `app/api/bookings/route.ts`,
+  который хранит заявки в `.data/bookings.json` (демо-персистентность,
+  запись сериализована через очередь, чтобы не терять параллельные заявки).
+* `LocalBookingStore` — `localStorage`, включается автоматически, если API
+  недоступен (например, демо открыто как статический экспорт). Активное
+  хранилище показано в шапке `/admin`.
+
+Чтобы подключить реальную БД, достаточно переписать чтение/запись в
+`app/api/bookings/route.ts` — UI и типы менять не нужно. Тело `BookingDraft` —
+стабильный контракт для backend-разработчика.
+
+## Демо-панель `/admin`
+
+* Сводка: новые заявки, записи на сегодня, на неделю, всего в базе.
+* Фильтры по периоду и статусу, поиск по имени / телефону / автомобилю.
+* Таблица на desktop, карточки на mobile.
+* Статусы: Новая → Подтверждена → В работе → Завершена / Отменена
+  (изменение сохраняется сразу).
+* Кнопка «Демо-заявки» и «Обновить», состояния загрузки (skeleton),
+  пустой список, ошибка с повтором.
+
+## Состояния и доступность
+
+* Loading: skeleton-карточки в админке, кнопки с индикатором отправки.
+* Ошибки: валидация полей с `aria-invalid` + `role="alert"`, ошибки API
+  выводятся в форме и в таблице, есть повтор запроса.
+* A11y: семантические `fieldset/legend`, подписи у всех полей, `aria-label`
+  у иконочных кнопок, focus-visible, focus-trap и Esc в модальных окнах,
+  блокировка скролла под модалкой, `prefers-reduced-motion`.
+
+## Данные и честность контента
+
+Факты (адрес, телефон, часы работы, марки, оплата, рейтинг, отзывы) взяты из
+карточки компании в 2ГИС; шаблонное наполнение помечено чипом «Демо».
+Подробная таблица «факт / демо» и **предупреждение о расхождении рейтинга с
+брифом** — в [`DATA-SOURCES.md`](./DATA-SOURCES.md).
+
+## Структура
+
+```
+app/
+  layout.tsx            метаданные, OG, JSON-LD, шрифты
+  page.tsx              лендинг (композиция секций)
+  booking/page.tsx      страница записи
+  admin/page.tsx        админ-панель (демо)
+  api/bookings/route.ts REST-хранилище заявок
+components/
+  hero, services, advantages, about, process, gallery,
+  reviews, rating-summary, cta-section, contacts, site-header,
+  site-footer, mobile-cta-bar, book-button, scroll-reveal, ui
+  booking/ booking-provider · booking-modal · booking-flow · calendar
+  admin/   admin-dashboard
+lib/
+  company.ts   проверенные данные 2ГИС + демо-константы
+  services.ts  каталог услуг (с флагом verified)
+  reviews.ts   реальные отзывы из 2ГИС
+  booking.ts   домен, валидация, BookingStore, демо-данные
+  utils.ts     форматирование дат/телефона, cn, reveal
+scripts/
+  optimize-images.py   разовая подготовка изображений
+  make-favicon.py      разовая генерация favicon
+  qa.mjs               сквозной smoke-тест
+```
+
+## Что проверено
+
+* `npm run lint`, `npx tsc --noEmit`, `npm run build` — без ошибок и предупреждений.
+* `scripts/qa.mjs` — 31/31: страницы, SEO-теги, JSON-LD, карта, robots/sitemap,
+  создание/чтение/смена статуса заявки, отклонение невалидной заявки.
+* Визуальная проверка в браузере на 1920 / 1440 / 1280 / 1024 / 768 / 430 / 390 /
+  375 / 320 px: горизонтального переполнения нет ни на одной ширине, sticky-CTA
+  и мобильное меню работают, календарь и время записи помещаются на 320 px,
+  лайтбокс галереи не переполняет экран.
+* По итогам QA исправлены: маска телефона (страна не подмешивалась в цифры),
+  отсутствие текста ошибки при неполном номере, ширина диалога записи на узких
+  экранах (`fieldset` + `min-inline-size: min-content`).
+
+Скриншоты проверок — в `qa-screens/` (папка не входит в репозиторий).
+
+## Переменные окружения
+
+Скопируйте `.env.example` в `.env.local` и укажите домен — он нужен для
+canonical-ссылок, OG-изображений и sitemap:
+
+```
+NEXT_PUBLIC_SITE_URL=https://ваш-домен.kz
+```
+
+## Изображения
+
+Фотографии на сайте — сгенерированные демонстрационные изображения
+(тёмная автомотивная стилистика). Они не являются фотографиями компании;
+в карточке 2ГИС у Lux car 5 своих фото, и владелец может заменить файлы в
+`public/images/` на собственные, сохранив имена — код менять не потребуется.

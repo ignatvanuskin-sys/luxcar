@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# demo booking storage (local file persistence)
+/.data
+
+# generated art sources (optimized copies live in /public/images)
+/media-output
+
+# visual QA screenshots produced during development
+/qa-screens
