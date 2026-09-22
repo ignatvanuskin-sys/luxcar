@@ -24,8 +24,13 @@ npm start            # запуск собранного приложения
 Проверки (нужен запущенный сервер):
 
 ```bash
-node scripts/qa.mjs                                      # 31 сквозная проверка страниц и API
-node --experimental-strip-types scripts/phone-mask.test.mjs   # маска телефона
+node scripts/qa.mjs                       # 31 сквозная проверка страниц и API
+node scripts/verify-deploy.mjs <url>      # проверка задеплоенного сайта
+
+# юнит-проверки логики (запускаются на «голом» node)
+node --experimental-strip-types scripts/phone-mask.test.mjs
+node --experimental-strip-types --import ./scripts/register-loader.mjs \
+     scripts/booking-store.test.mjs
 ```
 
 ## Страницы

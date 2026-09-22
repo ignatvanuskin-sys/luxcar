@@ -467,9 +467,18 @@ export function AdminDashboard() {
                   <li key={booking.id} className="panel rounded-2xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="flex items-center gap-2 font-medium text-white">
+                        <p className="flex flex-wrap items-center gap-2 font-medium text-white">
                           {booking.name}
                           {booking.demo ? <DemoChip /> : null}
+                          {booking.origin === "local" ? (
+                            <Badge
+                              tone="outline"
+                              className="px-1.5 py-0.5 text-[10px] text-white/40"
+                              title="Заявка сохранена в этом браузере: серверный экземпляр её не содержит"
+                            >
+                              в браузере
+                            </Badge>
+                          ) : null}
                         </p>
                         <a
                           href={`tel:${booking.phone.replace(/[^\d+]/g, "")}`}

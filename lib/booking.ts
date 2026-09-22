@@ -228,6 +228,34 @@ const localStore: BookingStore = {
   },
 };
 
+/**
+ * Ids the server has already failed to find once.
+ *
+ * Serverless storage is per-instance, so a later GET can still return a row
+ * that a PATCH routed to another instance answered 404 for. Remembering the id
+ * keeps the admin honest (the row is really browser-only) and stops pointless
+ * repeated PATCH requests.
+ */
+const LOCAL_ONLY_KEY = "luxcar:local-only-ids:v1";
+
+function readLocalOnlyIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(LOCAL_ONLY_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberLocalOnly(id: string): void {
+  if (typeof window === "undefined") return;
+  const ids = readLocalOnlyIds();
+  if (ids.includes(id)) return;
+  window.localStorage.setItem(LOCAL_ONLY_KEY, JSON.stringify([...ids, id]));
+}
+
 /** Keeps the local mirror in sync after a row changed on the server. */
 function patchLocal(updated: Booking): void {
   const bookings = readLocal();
@@ -244,9 +272,17 @@ function patchLocal(updated: Booking): void {
  */
 function mergeBookings(server: Booking[], local: Booking[]): Booking[] {
   const byId = new Map<string, Booking>();
+  const localOnlyIds = readLocalOnlyIds();
 
   local.forEach((booking) => byId.set(booking.id, { ...booking, origin: "local" }));
-  server.forEach((booking) => byId.set(booking.id, { ...booking, origin: "server" }));
+  server.forEach((booking) =>
+    byId.set(booking.id, {
+      ...booking,
+      // A id the server already lost once stays browser-only even if some
+      // instance answers GET with it again.
+      origin: localOnlyIds.includes(booking.id) ? "local" : "server",
+    }),
+  );
 
   return Array.from(byId.values()).sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
@@ -352,7 +388,9 @@ class ResilientBookingStore implements BookingStore {
     status: BookingStatus,
     options?: { localOnly?: boolean },
   ): Promise<Booking> {
-    if (options?.localOnly) return localStore.updateStatus(id, status);
+    if (options?.localOnly ?? readLocalOnlyIds().includes(id)) {
+      return localStore.updateStatus(id, status);
+    }
 
     if (!this.degraded) {
       try {
@@ -366,6 +404,7 @@ class ResilientBookingStore implements BookingStore {
         // and later edits skip the pointless request.
         const notOnServer = error instanceof BookingError && error.status === 404;
         if (!notOnServer && error instanceof BookingError) throw error;
+        rememberLocalOnly(id);
         const updated = await localStore.updateStatus(id, status);
         return { ...updated, origin: "local" };
       }
