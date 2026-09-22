@@ -24,14 +24,24 @@ const SIZES: Record<ButtonSize, string> = {
   lg: "h-14 px-7 text-[15px] rounded-xl gap-2.5",
 };
 
-/** Shared with the client-side booking CTA so every button stays identical. */
+/**
+ * Shared with the client-side booking CTA so every button stays identical.
+ *
+ * `wrap` drops `whitespace-nowrap`. It exists because a nowrap label raises the
+ * min-content width of everything above it, which pushes grid/flex tracks wider
+ * than the viewport on narrow phones (that is how the contacts cards ended up
+ * bleeding 9px off a 320px screen). Use it in tight containers so the label can
+ * break onto a second line instead.
+ */
 export function buttonClass(
   variant: ButtonVariant = "primary",
   size: ButtonSize = "md",
   className?: string,
+  wrap = false,
 ): string {
   return cn(
-    "inline-flex select-none items-center justify-center whitespace-nowrap",
+    "inline-flex select-none items-center justify-center",
+    !wrap && "whitespace-nowrap",
     "press disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100",
     VARIANTS[variant],
     SIZES[size],

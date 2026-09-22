@@ -21,6 +21,7 @@ export function BookButton({
   className,
   href,
   sheen = false,
+  wrap = false,
 }: {
   children: ReactNode;
   serviceId?: string;
@@ -29,9 +30,16 @@ export function BookButton({
   className?: string;
   href?: string;
   sheen?: boolean;
+  /** Let a long label break onto a second line inside narrow containers. */
+  wrap?: boolean;
 }) {
   const { openBooking } = useBooking();
-  const classes = buttonClass(variant, size, sheen ? `sheen ${className ?? ""}` : className);
+  const classes = buttonClass(
+    variant,
+    size,
+    sheen ? `sheen ${className ?? ""}` : className,
+    wrap,
+  );
 
   if (href) {
     return (
