@@ -388,8 +388,13 @@ class ResilientBookingStore implements BookingStore {
     status: BookingStatus,
     options?: { localOnly?: boolean },
   ): Promise<Booking> {
-    if (options?.localOnly ?? readLocalOnlyIds().includes(id)) {
-      return localStore.updateStatus(id, status);
+    // `||`, not `??`: an explicit `localOnly: false` must not skip the
+    // remembered-id check (that made marked rows fire pointless PATCHes).
+    if (options?.localOnly === true || readLocalOnlyIds().includes(id)) {
+      const updated = await localStore.updateStatus(id, status);
+      // Keep the origin on the returned row, otherwise the admin replaces it
+      // with an object without `origin` and the "в браузере" badge disappears.
+      return { ...updated, origin: "local" };
     }
 
     if (!this.degraded) {

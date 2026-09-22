@@ -88,6 +88,15 @@ const second = await store.updateStatus(created.id, "done", {
 });
 check("повторная смена статуса не дёргает API", patchCalls === 1, `calls=${patchCalls}`);
 check("статус обновлён", second.status === "done");
+check("пометка origin сохраняется после локального обновления", second.origin === "local");
+
+// Even an explicit `localOnly: false` must not bypass the remembered id.
+const third = await store.updateStatus(created.id, "in_progress", { localOnly: false });
+check(
+  "явный localOnly:false не отменяет запомненный id",
+  patchCalls === 1 && third.origin === "local",
+  `calls=${patchCalls}, origin=${third.origin}`,
+);
 
 // Even if some instance answers GET with the row again, the decision sticks.
 serverHasRow = true;
