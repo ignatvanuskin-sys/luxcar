@@ -44,14 +44,21 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-90 transition-all duration-300",
-        scrolled
-          ? "border-b border-white/[0.07] bg-ink-950/85 backdrop-blur-xl"
-          : "border-b border-transparent bg-gradient-to-b from-black/60 to-transparent",
-      )}
-    >
+    <>
+      {/* The mobile menu is a sibling of <header>, never a child: once scrolled,
+          the header carries `backdrop-blur-xl`, and an element with a
+          backdrop-filter becomes the containing block for fixed descendants.
+          Nested inside, the menu panel was positioned against the ~64px header
+          instead of the viewport, so it lost its background and its links sat
+          unreadable on top of the page content. */}
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-90 transition-all duration-300",
+          scrolled
+            ? "border-b border-white/[0.07] bg-ink-950/85 backdrop-blur-xl"
+            : "border-b border-transparent bg-gradient-to-b from-black/60 to-transparent",
+        )}
+      >
       {/* Desktop utility strip */}
       <div
         className={cn(
@@ -147,16 +154,25 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {/* Mobile navigation */}
-      {menuOpen ? (
-        <div className="animate-fade-in fixed inset-0 z-100 bg-ink-950/97 backdrop-blur-xl lg:hidden">
+      </header>
+
+      {menuOpen ? <MobileMenu onClose={() => setMenuOpen(false)} /> : null}
+    </>
+  );
+}
+
+/** Rendered as a sibling of <header> — see the note in SiteHeader. */
+function MobileMenu({ onClose }: { onClose: () => void }) {
+  const { openBooking } = useBooking();
+  return (
+    <div className="animate-fade-in fixed inset-0 z-100 bg-ink-950/97 backdrop-blur-xl lg:hidden">
           <div className="container-page flex h-18 items-center justify-between">
             <span className="font-display text-[17px] font-bold tracking-[0.16em] text-white">
               LUX<span className="text-accent-500">CAR</span>
             </span>
             <button
               type="button"
-              onClick={() => setMenuOpen(false)}
+              onClick={onClose}
               aria-label="Закрыть меню"
               className="grid size-11 place-items-center rounded-xl border border-white/12 text-white"
             >
@@ -172,7 +188,7 @@ export function SiteHeader() {
               <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={onClose}
                 className="border-b border-white/[0.06] py-4 text-lg font-medium text-white/85 transition hover:text-accent-400"
               >
                 {link.label}
@@ -184,10 +200,10 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => {
-                setMenuOpen(false);
+                onClose();
                 openBooking();
               }}
-              className="press h-14 w-full rounded-xl bg-accent-500 text-[15px] font-semibold text-ink-950"
+              className="sheen press h-14 w-full rounded-xl bg-accent-500 text-[15px] font-semibold text-ink-950"
             >
               Записаться на обслуживание
             </button>
@@ -203,7 +219,5 @@ export function SiteHeader() {
             </p>
           </div>
         </div>
-      ) : null}
-    </header>
   );
 }

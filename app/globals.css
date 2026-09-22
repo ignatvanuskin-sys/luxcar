@@ -378,19 +378,22 @@
 }
 
 /* Light sweep across the primary CTA */
+/* The glint itself lasts ~2s of a 6.5s cycle, then rests: a slow continuous
+   sweep read as "the button is not animating at all" on phones. */
 @keyframes sheen-sweep {
   0% {
     transform: translate3d(-130%, 0, 0) skewX(-18deg);
     opacity: 0;
   }
-  10% {
-    opacity: 0.5;
+  6% {
+    opacity: 0.62;
   }
-  55% {
-    opacity: 0.5;
+  30% {
+    transform: translate3d(240%, 0, 0) skewX(-18deg);
+    opacity: 0;
   }
   100% {
-    transform: translate3d(230%, 0, 0) skewX(-18deg);
+    transform: translate3d(240%, 0, 0) skewX(-18deg);
     opacity: 0;
   }
 }
@@ -405,14 +408,14 @@
   position: absolute;
   inset-block: 0;
   left: 0;
-  width: 38%;
+  width: 44%;
   background-image: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 0.5),
+    rgb(255 255 255 / 0.62),
     transparent
   );
-  animation: sheen-sweep 7.5s ease-in-out 2.4s infinite;
+  animation: sheen-sweep 6.5s cubic-bezier(0.4, 0, 0.2, 1) 1.6s infinite;
   pointer-events: none;
 }
 
