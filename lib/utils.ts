@@ -7,9 +7,27 @@ export function cn(
   return values.filter(Boolean).join(" ");
 }
 
+/**
+ * Number formatting for animated counters: Russian digit grouping, but a dot as
+ * the decimal separator so the rating reads exactly like it does in 2ГИС ("4.8").
+ */
+export function formatCount(value: number, decimals = 0): string {
+  const formatted = new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+
+  return decimals > 0 ? formatted.replace(",", ".") : formatted;
+}
+
 /** Stagger for scroll-reveal animations. */
 export function revealDelay(ms: number): CSSProperties {
   return { "--reveal-delay": `${ms}ms` } as CSSProperties;
+}
+
+/** Stagger for the above-the-fold entrance animations. */
+export function riseDelay(ms: number): CSSProperties {
+  return { "--rise-delay": `${ms}ms` } as CSSProperties;
 }
 
 export function digitsOnly(value: string): string {

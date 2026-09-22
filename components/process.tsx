@@ -63,7 +63,8 @@ export function Process() {
           ))}
         </ol>
 
-        <div className="mt-14 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <div data-reveal
+          className="mt-14 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <BookButton size="lg" className="w-full sm:w-auto">
             Записаться на обслуживание
           </BookButton>

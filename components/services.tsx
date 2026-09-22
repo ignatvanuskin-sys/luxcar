@@ -25,7 +25,7 @@ export function Services() {
             return (
               <li
                 key={service.id}
-                data-reveal
+                data-reveal="scale"
                 style={revealDelay(Math.min(index, 5) * 50)}
                 className="panel group flex flex-col rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:border-accent-500/35 hover:shadow-[0_28px_60px_-32px_rgba(255,122,26,0.45)]"
               >

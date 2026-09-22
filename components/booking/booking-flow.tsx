@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import {
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { Calendar } from "@/components/booking/calendar";
-import { Button, DemoChip } from "@/components/ui";
+import { Button, DemoChip, DotLoader } from "@/components/ui";
 import {
   BOOKING_HORIZON_DAYS,
   TIME_SLOTS,
@@ -69,6 +69,15 @@ const EMPTY_FORM: FormState = {
 
 type FieldErrors = Partial<Record<keyof FormState, string>>;
 
+/**
+ * The API answers in ~20 ms locally, so the submitting state used to flash for a
+ * single frame and read as a glitch instead of feedback. Keeping it on screen
+ * briefly makes the state legible without meaningfully delaying the user.
+ */
+const MIN_SUBMIT_MS = 400;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function BookingFlow({
   initialServiceId,
   onClose,
@@ -87,6 +96,10 @@ export function BookingFlow({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [created, setCreated] = useState<Booking | null>(null);
+  /** Direction of the last step change, so the step slides the right way. */
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  /** Bumped on every failed validation to re-trigger the shake animation. */
+  const [shakeKey, setShakeKey] = useState(0);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -131,20 +144,24 @@ export function BookingFlow({
     const nextErrors = validateStep(step);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      setShakeKey((current) => current + 1);
       return;
     }
     setErrors({});
+    setDirection("forward");
     setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
   };
 
   const goBack = () => {
     setErrors({});
+    setDirection("back");
     setStep((current) => Math.max(current - 1, 0));
   };
 
   /** Validates a single contact field as soon as the user leaves it. */
   const validateContactField = (key: "name" | "phone") => {
     const contactErrors = validateContact({ name: form.name, phone: form.phone });
+    if (contactErrors[key]) setShakeKey((current) => current + 1);
     setErrors((current) => ({ ...current, [key]: contactErrors[key] }));
   };
 
@@ -153,6 +170,7 @@ export function BookingFlow({
     const contactErrors = validateContact({ name: form.name, phone: form.phone });
     if (Object.keys(contactErrors).length > 0) {
       setErrors(contactErrors);
+      setShakeKey((current) => current + 1);
       document
         .getElementById(contactErrors.name ? "booking-name" : "booking-phone")
         ?.focus();
@@ -175,7 +193,10 @@ export function BookingFlow({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const booking = await getBookingStore().create(draft);
+      const [booking] = await Promise.all([
+        getBookingStore().create(draft),
+        delay(MIN_SUBMIT_MS),
+      ]);
       setCreated(booking);
     } catch (error) {
       setSubmitError(
@@ -249,7 +270,8 @@ export function BookingFlow({
 
         <p className="text-xs leading-relaxed text-white/40">
           Заявка пока не подтверждена: сначала её проверит администратор сервиса.
-          Номер заявки: <span className="font-mono text-white/60">{created.id}</span>
+          Номер заявки:{" "}
+          <span className="font-mono break-all text-white/60">{created.id}</span>
         </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -312,7 +334,7 @@ export function BookingFlow({
 
       {/* Step 1 — service */}
       {step === 0 ? (
-        <fieldset className="min-w-0 space-y-4">
+        <fieldset className={cn("min-w-0 space-y-4", direction === "forward" ? "step-forward" : "step-back")}>
           <legend className="text-lg font-semibold text-white sm:text-xl">
             Что нужно автомобилю?
           </legend>
@@ -332,7 +354,7 @@ export function BookingFlow({
                   aria-pressed={selected}
                   onClick={() => update("serviceId", option.id)}
                   className={cn(
-                    "group flex flex-col items-start gap-2 rounded-xl border p-3.5 text-left transition-all duration-200",
+                    "press group flex flex-col items-start gap-2 rounded-xl border p-3.5 text-left",
                     selected
                       ? "border-accent-500/60 bg-accent-500/10 shadow-[0_10px_30px_-18px_rgba(255,122,26,0.8)]"
                       : "border-white/10 bg-white/[0.03] hover:border-white/22 hover:bg-white/[0.06]",
@@ -353,13 +375,13 @@ export function BookingFlow({
               );
             })}
           </div>
-          <FieldError message={errors.serviceId} />
+          <FieldError message={errors.serviceId} shakeKey={shakeKey} />
         </fieldset>
       ) : null}
 
       {/* Step 2 — car */}
       {step === 1 ? (
-        <fieldset className="min-w-0 space-y-4">
+        <fieldset className={cn("min-w-0 space-y-4", direction === "forward" ? "step-forward" : "step-back")}>
           <legend className="text-lg font-semibold text-white sm:text-xl">
             Информация об автомобиле
           </legend>
@@ -409,7 +431,7 @@ export function BookingFlow({
 
       {/* Step 3 — date */}
       {step === 2 ? (
-        <fieldset className="min-w-0 space-y-4">
+        <fieldset className={cn("min-w-0 space-y-4", direction === "forward" ? "step-forward" : "step-back")}>
           <legend className="text-lg font-semibold text-white sm:text-xl">
             Когда удобно приехать?
           </legend>
@@ -424,13 +446,13 @@ export function BookingFlow({
               <span>Выберите дату в календаре — записи доступны на 2 месяца вперёд.</span>
             )}
           </p>
-          <FieldError message={errors.date} />
+          <FieldError message={errors.date} shakeKey={shakeKey} />
         </fieldset>
       ) : null}
 
       {/* Step 4 — time */}
       {step === 3 ? (
-        <fieldset className="min-w-0 space-y-4">
+        <fieldset className={cn("min-w-0 space-y-4", direction === "forward" ? "step-forward" : "step-back")}>
           <legend className="text-lg font-semibold text-white sm:text-xl">
             Удобное время
           </legend>
@@ -456,7 +478,7 @@ export function BookingFlow({
                     aria-pressed={selected}
                     onClick={() => update("time", slot)}
                     className={cn(
-                      "h-12 min-w-[5.25rem] shrink-0 rounded-xl border text-sm font-medium tabular-nums transition-all duration-200 sm:min-w-0",
+                      "press h-12 min-w-[5.25rem] shrink-0 rounded-xl border text-sm font-medium tabular-nums sm:min-w-0",
                       selected
                         ? "border-accent-500/60 bg-accent-500 text-ink-950"
                         : "border-white/10 bg-white/[0.03] text-white/80 hover:border-white/25 hover:bg-white/[0.07]",
@@ -472,13 +494,13 @@ export function BookingFlow({
             <DemoChip />
             Сетка времени — демонстрационная. Сервис открыт {VERIFIED.hours.toLowerCase()}, окончательное время подтвердит администратор.
           </p>
-          <FieldError message={errors.time} />
+          <FieldError message={errors.time} shakeKey={shakeKey} />
         </fieldset>
       ) : null}
 
       {/* Step 5 — contacts */}
       {step === 4 ? (
-        <fieldset className="min-w-0 space-y-4">
+        <fieldset className={cn("min-w-0 space-y-4", direction === "forward" ? "step-forward" : "step-back")}>
           <legend className="text-lg font-semibold text-white sm:text-xl">
             Как с вами связаться?
           </legend>
@@ -492,6 +514,7 @@ export function BookingFlow({
               onChange={(value) => update("name", value)}
               onBlur={() => validateContactField("name")}
               error={errors.name}
+              shakeKey={shakeKey}
             />
             <Field
               id="booking-phone"
@@ -505,6 +528,7 @@ export function BookingFlow({
               onChange={(value) => update("phone", formatPhoneInput(value))}
               onBlur={() => validateContactField("phone")}
               error={errors.phone}
+              shakeKey={shakeKey}
               hint={
                 form.phone && !isPhoneComplete(form.phone)
                   ? "Введите номер полностью: 10 цифр после +7"
@@ -580,9 +604,18 @@ export function BookingFlow({
             <ArrowRight aria-hidden className="size-4" />
           </Button>
         ) : (
-          <Button type="submit" size="lg" loading={submitting} className="justify-center">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submitting}
+            aria-busy={submitting || undefined}
+            className="justify-center"
+          >
             {submitting ? (
-              "Отправляем…"
+              <>
+                <DotLoader />
+                Отправляем…
+              </>
             ) : (
               <>
                 <Send aria-hidden className="size-4" />
@@ -610,6 +643,7 @@ function Field({
   error,
   hint,
   prefix,
+  shakeKey = 0,
   placeholder,
   type = "text",
   inputMode,
@@ -624,6 +658,7 @@ function Field({
   onBlur?: () => void;
   error?: string;
   hint?: string;
+  shakeKey?: number;
   /** Static, non-editable prefix rendered inside the field (e.g. "+7"). */
   prefix?: string;
   placeholder?: string;
@@ -673,7 +708,7 @@ function Field({
         />
       </div>
       {error ? (
-        <FieldError id={messageId} message={error} />
+        <FieldError id={messageId} message={error} shakeKey={shakeKey} />
       ) : hint ? (
         <p id={messageId} className="text-[12px] text-white/40">
           {hint}
@@ -683,10 +718,19 @@ function Field({
   );
 }
 
-function FieldError({ message, id }: { message?: string; id?: string }) {
+function FieldError({
+  message,
+  id,
+  shakeKey = 0,
+}: {
+  message?: string;
+  id?: string;
+  /** Changing this value re-mounts the node and replays the shake animation. */
+  shakeKey?: number;
+}) {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="text-[12px] text-red-300">
+    <p key={shakeKey} id={id} role="alert" className="shake text-[12px] text-red-300">
       {message}
     </p>
   );

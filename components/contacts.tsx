@@ -60,7 +60,7 @@ export function Contacts() {
         />
 
         <div className="mt-12 grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="panel rounded-3xl p-6 lg:p-8">
+          <div data-reveal className="panel rounded-3xl p-6 lg:p-8">
             <p className="font-display text-xl font-bold tracking-[0.14em] text-white">
               LUX<span className="text-accent-500">CAR</span>
             </p>
@@ -123,7 +123,7 @@ export function Contacts() {
           </div>
 
           {/* Map */}
-          <div className="panel overflow-hidden rounded-3xl">
+          <div data-reveal="scale" className="beam panel overflow-hidden rounded-3xl">
             <div className="relative h-[320px] w-full sm:h-[420px] lg:h-full lg:min-h-[560px]">
               {/* Always-visible layer: keeps the block readable if the map
                   provider is unreachable, and labels the pin either way. */}

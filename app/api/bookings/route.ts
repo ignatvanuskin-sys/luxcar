@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import {
@@ -25,8 +26,24 @@ import { createId } from "@/lib/utils";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+/**
+ * Serverless platforms mount the deployment read-only, so `.data` inside the
+ * project cannot be written on Vercel. There we fall back to the instance's
+ * temp directory, which is writable but ephemeral (per lambda instance) — that
+ * is enough for a demo, and the browser mirrors every booking locally too, so
+ * the admin panel always shows what a client just submitted.
+ */
+const IS_SERVERLESS = Boolean(process.env.VERCEL);
+const DATA_DIR = IS_SERVERLESS
+  ? path.join(os.tmpdir(), "luxcar-demo")
+  : path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "bookings.json");
+
+/**
+ * Per-instance cache. Also the fallback when even the temp directory is not
+ * writable, so a demo never ends up with a silently dead endpoint.
+ */
+const memory: Booking[] = [];
 
 /** Serialises writes so two parallel POSTs cannot overwrite each other. */
 let queue: Promise<unknown> = Promise.resolve();
@@ -41,16 +58,26 @@ async function readAll(): Promise<Booking[]> {
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Booking[]) : [];
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
+    if (Array.isArray(parsed)) {
+      memory.length = 0;
+      memory.push(...(parsed as Booking[]));
+    }
+  } catch {
+    /* missing or unreadable file: serve the instance cache */
   }
+  return [...memory];
 }
 
 async function writeAll(bookings: Booking[]): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2), "utf8");
+  memory.length = 0;
+  memory.push(...bookings);
+
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2), "utf8");
+  } catch {
+    /* read-only filesystem: the instance cache still serves this session */
+  }
 }
 
 function jsonError(message: string, status: number): Response {

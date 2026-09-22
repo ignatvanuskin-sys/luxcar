@@ -1,5 +1,6 @@
 import { ExternalLink, MessageSquare, Star } from "lucide-react";
 
+import { CountUp } from "@/components/count-up";
 import { ButtonLink } from "@/components/ui";
 import { TWO_GIS, VERIFIED } from "@/lib/company";
 
@@ -11,17 +12,17 @@ export function RatingSummary() {
   const stats = [
     {
       label: "Оценок в 2ГИС",
-      value: `${VERIFIED.ratingsCount}`,
+      value: VERIFIED.ratingsCount,
       hint: "средняя оценка учитывает все оценки карточки",
     },
     {
       label: "Отзывов с текстом",
-      value: `${VERIFIED.reviewsCount}`,
+      value: VERIFIED.reviewsCount,
       hint: "открытая лента отзывов в 2ГИС",
     },
     {
       label: "Фотографий",
-      value: `${VERIFIED.photosCount}`,
+      value: VERIFIED.photosCount,
       hint: "в галерее карточки компании",
     },
   ];
@@ -29,7 +30,7 @@ export function RatingSummary() {
   return (
     <section className="scroll-mt-28 border-t border-white/[0.06] py-20 lg:py-24">
       <div className="container-page">
-        <div className="panel top-sheen overflow-hidden rounded-3xl">
+        <div className="beam panel top-sheen overflow-hidden rounded-3xl">
           <div className="grid gap-10 p-7 lg:grid-cols-[0.8fr_1.2fr] lg:p-10">
             <div data-reveal className="flex flex-col items-start gap-4">
               <span className="inline-flex items-center gap-2 rounded-full border border-accent-500/30 bg-accent-500/10 px-3 py-1 text-[11px] font-medium tracking-wider text-accent-300 uppercase">
@@ -39,7 +40,7 @@ export function RatingSummary() {
 
               <div className="flex items-end gap-3">
                 <span className="font-display text-[4.25rem] leading-none font-bold text-white">
-                  {VERIFIED.rating}
+                  <CountUp value={VERIFIED.rating} decimals={1} durationMs={1200} />
                 </span>
                 <div className="pb-2">
                   <p className="text-sm text-white/55">из 5</p>
@@ -72,7 +73,7 @@ export function RatingSummary() {
                   className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5"
                 >
                   <p className="font-display text-2xl font-bold text-white">
-                    {stat.value}
+                    <CountUp value={stat.value} />
                   </p>
                   <p className="mt-1 text-[13px] font-medium text-white/70">
                     {stat.label}

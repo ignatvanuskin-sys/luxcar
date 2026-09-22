@@ -73,9 +73,29 @@ export const VERIFIED_SERVICES = [
 export const DEMO_NOTICE =
   "Демо-контент: маркетинговые формулировки, каталог направлений и время записи подготовлены как шаблон и требуют подтверждения владельцем.";
 
+/**
+ * Absolute site URL used for canonical links, Open Graph and the sitemap.
+ *
+ * Priority: explicit env var → the domain Vercel assigns to the project →
+ * the current deployment URL → localhost. The Vercel fallbacks matter because
+ * without them a deployment silently ships `http://localhost:3000` as its
+ * canonical URL and link previews break.
+ */
+function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/+$/, "");
+
+  const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelProduction) return `https://${vercelProduction}`;
+
+  const vercelDeployment = process.env.VERCEL_URL;
+  if (vercelDeployment) return `https://${vercelDeployment}`;
+
+  return "http://localhost:3000";
+}
+
 export const SITE = {
-  /** Set NEXT_PUBLIC_SITE_URL in production so OG images resolve absolutely. */
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: resolveSiteUrl(),
   title: "Lux Car — автосервис в Семее",
   description:
     "Автосервис Lux Car в Семее. Обслуживание и ремонт автомобилей. Запись на сервис онлайн.",

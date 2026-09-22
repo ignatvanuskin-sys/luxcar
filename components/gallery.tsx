@@ -148,7 +148,7 @@ export function Gallery() {
               aria-pressed={filter === item}
               onClick={() => setFilter(item)}
               className={cn(
-                "h-9 shrink-0 rounded-full border px-4 text-[13px] font-medium transition",
+                "press h-11 shrink-0 rounded-full border px-4 text-[13px] font-medium transition sm:h-9",
                 filter === item
                   ? "border-accent-500/50 bg-accent-500/12 text-accent-300"
                   : "border-white/10 bg-white/[0.03] text-white/55 hover:border-white/22 hover:text-white/85",
@@ -171,7 +171,7 @@ export function Gallery() {
                   type="button"
                   onClick={() => setActiveIndex(index)}
                   aria-label={`Открыть фото: ${photo.caption}`}
-                  className="group relative block w-full overflow-hidden rounded-2xl border border-white/[0.08] transition duration-300 hover:border-white/20"
+                  className="press group relative block w-full overflow-hidden rounded-2xl border border-white/[0.08] transition duration-300 hover:border-white/20"
                 >
                   <Image
                     src={photo.src}
@@ -228,7 +228,7 @@ export function Gallery() {
             <ChevronLeft aria-hidden className="size-5" />
           </button>
 
-          <figure className="max-h-full w-full max-w-5xl">
+          <figure className="animate-pop-in max-h-full w-full max-w-5xl">
             <Image
               src={active.src}
               alt={active.alt}

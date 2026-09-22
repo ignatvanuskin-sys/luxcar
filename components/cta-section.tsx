@@ -18,6 +18,11 @@ export function CtaSection() {
         />
         <div className="absolute inset-0 bg-ink-950/72" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/60 to-ink-950/80" />
+        <div
+          aria-hidden
+          /* Positioned with insets only — the drift animation owns `transform`. */
+          className="orb orb-b top-1/4 left-1/4 size-[20rem] bg-accent-500/10 sm:size-[34rem]"
+        />
       </div>
 
       <div className="container-page py-24 lg:py-32">

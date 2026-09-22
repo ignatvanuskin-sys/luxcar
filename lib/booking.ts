@@ -64,9 +64,20 @@ export type Booking = {
   comment: string;
   /** True for bookings created by the "load demo data" button in the admin. */
   demo?: boolean;
+  /** Set by `list()` only: whether this row came from the API or the browser. */
+  origin?: BookingOrigin;
 };
 
-export type BookingDraft = Omit<Booking, "id" | "createdAt" | "status"> & {
+/**
+ * Where a row in the merged admin list came from. Assigned by `list()` only,
+ * never persisted.
+ */
+export type BookingOrigin = "server" | "local";
+
+export type BookingDraft = Omit<
+  Booking,
+  "id" | "createdAt" | "status" | "origin"
+> & {
   demo?: boolean;
 };
 
@@ -96,7 +107,16 @@ export const TIME_SLOTS = [
 /** How far ahead a client can book. */
 export const BOOKING_HORIZON_DAYS = 60;
 
-export class BookingError extends Error {}
+export class BookingError extends Error {
+  /** HTTP status when the error came from the API (undefined for network errors). */
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "BookingError";
+    this.status = status;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Validation                                                          */
@@ -199,6 +219,31 @@ const localStore: BookingStore = {
   },
 };
 
+/** Keeps the local mirror in sync after a row changed on the server. */
+function patchLocal(updated: Booking): void {
+  const bookings = readLocal();
+  const index = bookings.findIndex((booking) => booking.id === updated.id);
+  if (index === -1) return;
+  bookings[index] = { ...bookings[index], status: updated.status };
+  writeLocal(bookings);
+}
+
+/**
+ * Server rows win; mirrored local rows are appended for this browser. This is
+ * what makes the demo admin show a booking even when the serverless API is
+ * ephemeral (each Vercel instance keeps its own /tmp).
+ */
+function mergeBookings(server: Booking[], local: Booking[]): Booking[] {
+  const byId = new Map<string, Booking>();
+
+  local.forEach((booking) => byId.set(booking.id, { ...booking, origin: "local" }));
+  server.forEach((booking) => byId.set(booking.id, { ...booking, origin: "server" }));
+
+  return Array.from(byId.values()).sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
 async function request<T>(input: string, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
     ...init,
@@ -214,7 +259,7 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
     } catch {
       /* keep the generic message */
     }
-    throw new BookingError(message);
+    throw new BookingError(message, response.status);
   }
 
   return (await response.json()) as T;
@@ -269,6 +314,9 @@ class ResilientBookingStore implements BookingStore {
       try {
         const booking = await apiStore.create(draft);
         this.kind = "api";
+        // Mirror locally as well: serverless storage is per-instance, so the
+        // admin panel on the device that made the booking must still see it.
+        writeLocal([booking, ...readLocal()]);
         return booking;
       } catch {
         this.fallback();
@@ -280,23 +328,29 @@ class ResilientBookingStore implements BookingStore {
   async list(): Promise<Booking[]> {
     if (!this.degraded) {
       try {
-        const bookings = await apiStore.list();
+        const server = await apiStore.list();
         this.kind = "api";
-        return bookings;
+        return mergeBookings(server, readLocal());
       } catch {
         this.fallback();
       }
     }
-    return localStore.list();
+    return mergeBookings([], readLocal());
   }
 
   async updateStatus(id: string, status: BookingStatus): Promise<Booking> {
     if (!this.degraded) {
       try {
-        return await apiStore.updateStatus(id, status);
+        const updated = await apiStore.updateStatus(id, status);
+        patchLocal(updated);
+        return updated;
       } catch (error) {
-        if (error instanceof BookingError) throw error;
-        this.fallback();
+        // 404 means the row only exists in this browser's mirror (or the
+        // serverless instance that stored it is already gone): update the
+        // mirror instead of failing, without giving up on the server API.
+        const notOnServer = error instanceof BookingError && error.status === 404;
+        if (!notOnServer && error instanceof BookingError) throw error;
+        return localStore.updateStatus(id, status);
       }
     }
     return localStore.updateStatus(id, status);

@@ -9,6 +9,9 @@ import { ButtonLink, buttonClass } from "@/components/ui";
  * Single entry point for the primary conversion action, so every CTA on the page
  * behaves identically: it opens the booking dialog with the relevant service
  * pre-selected. Renders a plain link when `href` is provided.
+ *
+ * `sheen` adds the slow light sweep reserved for the main CTA (at most one per
+ * screen), so the page never turns into a light show.
  */
 export function BookButton({
   children,
@@ -17,6 +20,7 @@ export function BookButton({
   size = "md",
   className,
   href,
+  sheen = false,
 }: {
   children: ReactNode;
   serviceId?: string;
@@ -24,12 +28,14 @@ export function BookButton({
   size?: "sm" | "md" | "lg";
   className?: string;
   href?: string;
+  sheen?: boolean;
 }) {
   const { openBooking } = useBooking();
+  const classes = buttonClass(variant, size, sheen ? `sheen ${className ?? ""}` : className);
 
   if (href) {
     return (
-      <ButtonLink href={href} variant={variant} size={size} className={className}>
+      <ButtonLink href={href} variant={variant} size={size} className={classes}>
         {children}
       </ButtonLink>
     );
@@ -40,7 +46,7 @@ export function BookButton({
       type="button"
       onClick={() => openBooking(serviceId)}
       aria-haspopup="dialog"
-      className={buttonClass(variant, size, className)}
+      className={classes}
     >
       {children}
     </button>

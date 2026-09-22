@@ -101,6 +101,28 @@
     letter-spacing: -0.02em;
   }
 
+  /* Mobile: no 300 ms tap delay and no blue tap flash. */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  img,
+  svg {
+    -webkit-user-drag: none;
+  }
+
   ::selection {
     background-color: var(--color-accent-500);
     color: var(--color-ink-950);
@@ -241,6 +263,335 @@
     contrast(0.92);
 }
 
+/* ------------------------------------------------------------------ */
+/* Motion system                                                       */
+/*                                                                     */
+/* Everything below animates only transform / opacity (plus one masked  */
+/* 1px gradient ring) so it stays on the compositor on mid-range        */
+/* phones. All of it is disabled by the reduced-motion block at the     */
+/* bottom of this file.                                                */
+/* ------------------------------------------------------------------ */
+
+/* Traveling light along a card border (border-beam). The custom property
+   needs @property to be animatable; without support the ring still renders,
+   it just stays static. */
+@property --beam-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+.beam {
+  position: relative;
+  isolation: isolate;
+}
+
+.beam::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg,
+    transparent 244deg,
+    color-mix(in oklab, var(--color-accent-400) 70%, white) 296deg,
+    var(--color-accent-500) 322deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin 9s linear infinite;
+  pointer-events: none;
+}
+
+/* Off-screen beams are paused by components/motion-observer.tsx */
+.beam[data-motion-paused="true"]::after {
+  animation-play-state: paused;
+}
+
+/* Slow ambient orbs (hero / closing CTA) */
+@keyframes orb-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -7%, 0) scale(1.09);
+  }
+}
+
+@keyframes orb-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-5%, 5%, 0) scale(0.95);
+  }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-a {
+  animation: orb-drift-a 22s ease-in-out infinite;
+}
+
+.orb-b {
+  animation: orb-drift-b 27s ease-in-out infinite;
+}
+
+/* Entrance for above-the-fold content (hero plays on load, no observer) */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+/* Light sweep across the primary CTA */
+@keyframes sheen-sweep {
+  0% {
+    transform: translate3d(-130%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(230%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 38%;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.5),
+    transparent
+  );
+  animation: sheen-sweep 7.5s ease-in-out 2.4s infinite;
+  pointer-events: none;
+}
+
+/* Touch / pointer press feedback */
+.press {
+  transition:
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.press:active {
+  transform: scale(0.975);
+}
+
+/* Validation feedback */
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  40% {
+    transform: translate3d(5px, 0, 0);
+  }
+  60% {
+    transform: translate3d(-3px, 0, 0);
+  }
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+}
+
+.shake {
+  animation: shake-x 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Booking step transitions */
+@keyframes step-in-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(26px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes step-in-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-26px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.step-forward {
+  animation: step-in-forward 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.step-back {
+  animation: step-in-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Numbers resolving into place */
+@keyframes stat-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.94);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.stat-pop {
+  animation: stat-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Counters are server-rendered with their final value (SEO + no-JS safe).
+   Only when the pre-paint script has confirmed motion is allowed do they start
+   hidden and count up — this avoids any flash of the final number. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-motion="on"] [data-count-to] {
+    opacity: 0;
+  }
+
+  html[data-motion="on"] [data-count-to].is-counted {
+    opacity: 1;
+    animation: stat-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* 3x3 dot matrix loader (submit button, admin) */
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dot-loader {
+  display: grid;
+  grid-template-columns: repeat(3, 5px);
+  gap: 3px;
+}
+
+.dot-loader span {
+  width: 5px;
+  height: 5px;
+  border-radius: 1.5px;
+  background-color: currentColor;
+  animation: dot-pulse 1.05s ease-in-out infinite;
+}
+
+.dot-loader span:nth-child(2),
+.dot-loader span:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+.dot-loader span:nth-child(3),
+.dot-loader span:nth-child(5),
+.dot-loader span:nth-child(7) {
+  animation-delay: 0.24s;
+}
+
+.dot-loader span:nth-child(6),
+.dot-loader span:nth-child(8) {
+  animation-delay: 0.36s;
+}
+
+/* Reveal variants on top of the default rise */
+[data-reveal="scale"] {
+  transform: translate3d(0, 26px, 0) scale(0.965);
+}
+
+[data-reveal="left"] {
+  transform: translate3d(-24px, 0, 0);
+}
+
+[data-reveal="fade"] {
+  transform: none;
+}
+
+/* Depth on the hero image while the page scrolls (progressive enhancement:
+   only browsers with scroll-driven animations actually run this). */
+@keyframes hero-parallax {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  to {
+    transform: translate3d(0, 7%, 0) scale(1.13);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .parallax-hero {
+      animation: hero-parallax linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 70vh;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -254,7 +605,8 @@
     transition-duration: 0.001ms !important;
   }
 
-  [data-reveal] {
+  [data-reveal],
+  .rise {
     opacity: 1;
     transform: none;
   }

@@ -120,7 +120,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <a
             href={VERIFIED.phoneHref}
-            className="hidden h-11 items-center gap-2 rounded-xl border border-white/12 px-4 text-sm font-medium text-white/85 transition hover:border-white/28 hover:text-white sm:inline-flex"
+            className="press hidden h-11 items-center gap-2 rounded-xl border border-white/12 px-4 text-sm font-medium text-white/85 transition hover:border-white/28 hover:text-white sm:inline-flex"
           >
             <Phone aria-hidden className="size-4 text-accent-400" />
             {VERIFIED.phone}
@@ -130,7 +130,7 @@ export function SiteHeader() {
             type="button"
             onClick={() => openBooking()}
             aria-haspopup="dialog"
-            className="hidden h-11 items-center rounded-xl bg-accent-500 px-5 text-sm font-semibold text-ink-950 shadow-[0_16px_40px_-18px_rgba(255,122,26,0.75)] transition hover:bg-accent-400 sm:inline-flex"
+            className="sheen press hidden h-11 items-center rounded-xl bg-accent-500 px-5 text-sm font-semibold text-ink-950 shadow-[0_16px_40px_-18px_rgba(255,122,26,0.75)] transition hover:bg-accent-400 sm:inline-flex"
           >
             Записаться
           </button>
@@ -140,7 +140,7 @@ export function SiteHeader() {
             onClick={() => setMenuOpen(true)}
             aria-label="Открыть меню"
             aria-expanded={menuOpen}
-            className="grid size-11 place-items-center rounded-xl border border-white/12 text-white transition hover:border-white/28 lg:hidden"
+            className="press grid size-11 place-items-center rounded-xl border border-white/12 text-white transition hover:border-white/28 lg:hidden"
           >
             <Menu aria-hidden className="size-5" />
           </button>
@@ -187,13 +187,13 @@ export function SiteHeader() {
                 setMenuOpen(false);
                 openBooking();
               }}
-              className="h-14 w-full rounded-xl bg-accent-500 text-[15px] font-semibold text-ink-950"
+              className="press h-14 w-full rounded-xl bg-accent-500 text-[15px] font-semibold text-ink-950"
             >
               Записаться на обслуживание
             </button>
             <a
               href={VERIFIED.phoneHref}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-white/14 text-[15px] font-medium text-white"
+              className="press flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-white/14 text-[15px] font-medium text-white"
             >
               <Phone aria-hidden className="size-4 text-accent-400" />
               {VERIFIED.phone}

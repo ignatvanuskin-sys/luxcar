@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
 
 import { BookingProvider } from "@/components/booking/booking-provider";
+import { MotionObserver } from "@/components/motion-observer";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { SITE, TWO_GIS, VERIFIED } from "@/lib/company";
 
@@ -128,9 +129,19 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <body className="min-h-dvh antialiased">
+        {/* Pre-paint flag: lets CSS hide elements that JS will animate in, so
+            counters never flash their final value. No JS or reduced motion
+            simply keeps the static server-rendered output. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.dataset.motion='on'}}catch(e){}",
+          }}
+        />
         <BookingProvider>
           {children}
           <ScrollReveal />
+          <MotionObserver />
         </BookingProvider>
         <script
           type="application/ld+json"

@@ -31,8 +31,8 @@ export function buttonClass(
   className?: string,
 ): string {
   return cn(
-    "inline-flex select-none items-center justify-center whitespace-nowrap transition-all duration-200",
-    "disabled:cursor-not-allowed disabled:opacity-55",
+    "inline-flex select-none items-center justify-center whitespace-nowrap",
+    "press disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100",
     VARIANTS[variant],
     SIZES[size],
     className,
@@ -199,4 +199,15 @@ export function DemoChip({ className }: { className?: string }) {
 
 export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cn("skeleton", className)} />;
+}
+
+/** 3x3 dot-matrix loader used while a request is in flight. */
+export function DotLoader({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={cn("dot-loader", className)}>
+      {Array.from({ length: 9 }, (_, index) => (
+        <span key={index} />
+      ))}
+    </span>
+  );
 }

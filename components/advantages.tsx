@@ -53,7 +53,7 @@ export function Advantages() {
           {ADVANTAGES.map((item, index) => (
             <li
               key={item.title}
-              data-reveal
+              data-reveal="scale"
               style={revealDelay(Math.min(index, 5) * 50)}
               className="panel top-sheen group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/18"
             >

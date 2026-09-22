@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CalendarCheck,
   CalendarDays,
+  CheckCircle2,
   CircleAlert,
   Database,
   Inbox,
@@ -15,7 +16,8 @@ import {
   Users,
 } from "lucide-react";
 
-import { Badge, Button, DemoChip, Skeleton } from "@/components/ui";
+import { CountUp } from "@/components/count-up";
+import { Badge, Button, DemoChip, DotLoader, Skeleton } from "@/components/ui";
 import {
   BOOKING_STATUSES,
   STATUS_LABELS,
@@ -45,6 +47,14 @@ export function AdminDashboard() {
   const [status, setStatus] = useState<BookingStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [rowError, setRowError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  /* Confirmation toast for a saved status change, dismissed automatically. */
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +137,9 @@ export function AdminDashboard() {
       setBookings((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
+      setToast(
+        `${booking.name}: статус — «${STATUS_LABELS[nextStatus]}»`,
+      );
     } catch (cause) {
       setBookings(previous);
       setRowError(
@@ -179,10 +192,10 @@ export function AdminDashboard() {
             <Badge
               tone="outline"
               className="gap-2 border-white/12 text-white/55"
-              title="Хранилище, которое обслужило последний запрос"
+              title="Источники, из которых собрана таблица"
             >
               <Database aria-hidden className="size-3.5" />
-              {storage === "api" ? "API /api/bookings" : "Локально в браузере"}
+              {storage === "api" ? "Сервер + этот браузер" : "Только этот браузер"}
             </Badge>
             <Button variant="secondary" onClick={() => void seedDemoData()} loading={seeding}>
               <Sparkles aria-hidden className="size-4" />
@@ -216,7 +229,7 @@ export function AdminDashboard() {
                 <Skeleton className="mt-4 h-9 w-14" />
               ) : (
                 <p className="font-display mt-3 text-3xl font-bold text-white">
-                  {card.value}
+                  <CountUp value={card.value} />
                 </p>
               )}
             </div>
@@ -301,6 +314,10 @@ export function AdminDashboard() {
         <section aria-label="Заявки" className="mt-6">
           {loading ? (
             <div className="panel space-y-3 rounded-2xl p-5">
+              <p className="flex items-center gap-3 text-[13px] text-white/45">
+                <DotLoader />
+                Загружаем заявки…
+              </p>
               {Array.from({ length: 5 }, (_, index) => (
                 <Skeleton key={index} className="h-12 w-full" />
               ))}
@@ -372,6 +389,15 @@ export function AdminDashboard() {
                           <span className="flex items-center gap-2 font-medium text-white">
                             {booking.name}
                             {booking.demo ? <DemoChip /> : null}
+                            {booking.origin === "local" ? (
+                              <Badge
+                                tone="outline"
+                                className="px-1.5 py-0.5 text-[10px] text-white/40"
+                                title="Заявка сохранена в этом браузере: серверный экземпляр её не содержит"
+                              >
+                                в браузере
+                              </Badge>
+                            ) : null}
                           </span>
                           {booking.comment ? (
                             <span className="mt-1 block max-w-[16rem] truncate text-[12px] text-white/35">
@@ -506,15 +532,32 @@ export function AdminDashboard() {
                 ))}
               </ul>
 
-              <p className="mt-4 text-[12px] text-white/35">
-                Показано {filtered.length} из {bookings.length}. Статусы меняются
-                сразу и сохраняются в{" "}
-                {storage === "api" ? "файловое хранилище API" : "localStorage браузера"}.
+              <p className="mt-4 text-[12px] leading-relaxed text-white/35">
+                Показано {filtered.length} из {bookings.length}. Таблица объединяет
+                заявки с сервера и из этого браузера, поэтому заявка, оформленная
+                здесь, видна сразу. В демо-режиме серверная часть хранит данные
+                только до перезапуска — для боевой работы подключается база данных
+                (интерфейс <span className="font-mono text-white/50">BookingStore</span>{" "}
+                уже готов).
               </p>
             </>
           )}
         </section>
       </main>
+
+      {/* Confirmation toast: rises in, then fades out on its own. */}
+      {toast ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-100 flex justify-center px-4">
+          <p
+            role="status"
+            aria-live="polite"
+            className="animate-pop-in flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-ink-850/95 px-4 py-3 text-[13px] text-emerald-100 shadow-lift backdrop-blur-md"
+          >
+            <CheckCircle2 aria-hidden className="size-4 text-emerald-300" />
+            {toast}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

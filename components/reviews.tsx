@@ -34,7 +34,7 @@ export function Reviews() {
           {REVIEWS.map((review, index) => (
             <li
               key={review.id}
-              data-reveal
+              data-reveal="scale"
               style={revealDelay(Math.min(index, 5) * 50)}
               className="panel flex flex-col rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/16"
             >

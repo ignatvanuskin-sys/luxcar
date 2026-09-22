@@ -33,7 +33,7 @@ export function MobileCtaBar() {
       <div className="flex items-center gap-2.5">
         <a
           href={VERIFIED.phoneHref}
-          className="flex h-12 shrink-0 items-center gap-2 rounded-xl border border-white/14 px-4 text-sm font-medium text-white"
+          className="press flex h-12 shrink-0 items-center gap-2 rounded-xl border border-white/14 px-4 text-sm font-medium text-white"
           aria-label={`Позвонить по номеру ${VERIFIED.phone}`}
         >
           <Phone aria-hidden className="size-4 text-accent-400" />
@@ -43,7 +43,7 @@ export function MobileCtaBar() {
           type="button"
           onClick={() => openBooking()}
           aria-haspopup="dialog"
-          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent-500 text-sm font-semibold text-ink-950 shadow-[0_14px_34px_-16px_rgba(255,122,26,0.85)]"
+          className="sheen press flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent-500 text-sm font-semibold text-ink-950 shadow-[0_14px_34px_-16px_rgba(255,122,26,0.85)]"
         >
           <CalendarPlus aria-hidden className="size-4" />
           Записаться
