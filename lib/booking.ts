@@ -360,12 +360,14 @@ class ResilientBookingStore implements BookingStore {
         patchLocal(updated);
         return updated;
       } catch (error) {
-        // 404 means the row only exists in this browser's mirror (or the
-        // serverless instance that stored it is already gone): update the
-        // mirror instead of failing, without giving up on the server API.
+        // 404 means the server no longer has this row (each serverless instance
+        // keeps its own ephemeral store): update the mirror instead of failing,
+        // and report the row as browser-only so the admin badge stays accurate
+        // and later edits skip the pointless request.
         const notOnServer = error instanceof BookingError && error.status === 404;
         if (!notOnServer && error instanceof BookingError) throw error;
-        return localStore.updateStatus(id, status);
+        const updated = await localStore.updateStatus(id, status);
+        return { ...updated, origin: "local" };
       }
     }
     return localStore.updateStatus(id, status);
